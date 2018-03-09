@@ -28,7 +28,7 @@ else {
         New-Item -Type String -Path $registryPath | Out-Null
     }
     $Name = "DOGroupId"
-    $value = $optionIdValue
+    $value = $optionIdValue.SubString(0, $optionIdValue.Length - 1)
     New-ItemProperty -Path $registryPath -Name $name -Value $value -PropertyType string -Force | Out-Null
   }
 }

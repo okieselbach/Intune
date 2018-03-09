@@ -1,5 +1,5 @@
 <#
-Version: 1.0
+Version: 1.1
 Author: Oliver Kieselbach
 Script: Register-DOScript.ps1
 
@@ -7,7 +7,8 @@ Description:
 Register a PS script as scheduled task to query DHCP for option 234 to get Group ID GUID
 
 Release notes:
-Version 1.0: Original published version. 
+Version 1.0: Original published version.
+Version 1.1: Fix, removed null terminator at the end of DHCP option value provided by DHCPOption.exe
 
 The script is provided "AS IS" with no warranties.
 #>
@@ -70,7 +71,7 @@ else {
         New-Item -Type String -Path $registryPath | Out-Null
     }
     $Name = "DOGroupId"
-    $value = $optionIdValue
+    $value = $optionIdValue.SubString(0, $optionIdValue.Length - 1)
     New-ItemProperty -Path $registryPath -Name $name -Value $value -PropertyType string -Force | Out-Null
   }
 }
