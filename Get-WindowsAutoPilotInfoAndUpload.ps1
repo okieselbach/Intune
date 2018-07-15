@@ -1,3 +1,19 @@
+<#
+Version: 1.0
+Author:  Oliver Kieselbach
+Script:  Get-WindowsAutoPilotInfoAndUpload.ps1
+
+Description:
+Get the AutoPilot information and copy it to an Azure Blob Storage. Use existing AzCopy.exe and 
+Get-WindowsAutoPilotInfo.ps1 files or download them from an Azure Blob Storage named 'resources'.
+If used with an MDT offline media the hash can be written to the offline media as well.
+
+Release notes:
+Version 1.0: Original published version.
+
+The script is provided "AS IS" with no warranties.
+#>
+
 # Supporting archive files needs to be in Blob Storage
 #
 # Get-WindowsAutoPilotInfo.ps1
@@ -76,8 +92,8 @@ $result = Start-Command -Command "`"$azCopyExe`"" -Arguments "/Source:`"$outputP
 # We try to copy the hash information to the scriptpath as the device might be installed from MDT offline media
 # ScriptPath would be pointing to the removable media for the offline install. In failure case we could use the gathered
 # information from the offline media to try the upload again.
-# this can easily be disabled this by defining $offlineMediaCopy = $false
-$offlineMediaCopy = $true
+# this can easily be enabled/disabled by defining $offlineMediaCopy = $true/$false
+$offlineMediaCopy = $false
 if ($offlineMediaCopy) {
     try {
         if ($result.stdout.Contains("Transfer successfully:   1")) {
