@@ -14,6 +14,7 @@ namespace IntuneWinAppUtilDecoder
             var predefinedEncryptionKey = string.Empty;
             var predefinedInitializationVector = string.Empty;
 
+            // get command line parameters
             switch (args.Length)
             {
                 case 0:
@@ -65,6 +66,7 @@ namespace IntuneWinAppUtilDecoder
             string targetFile;
             string extractPath;
 
+            // if we got an URL start downloading the content before decrypting it
             if (intunewinPath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                 intunewinPath.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
@@ -115,6 +117,7 @@ namespace IntuneWinAppUtilDecoder
             if (!string.IsNullOrWhiteSpace(predefinedEncryptionKey) &&
                 !string.IsNullOrWhiteSpace(predefinedInitializationVector))
             {
+                // decrypt as the package is the actual encrypted one already
                 if (Decrypt(intunewinPath, targetFile, predefinedEncryptionKey, predefinedInitializationVector))
                 {
                     LogUtil.WriteLine($"File '{intunewinPath}' successfully decoded!");
@@ -125,7 +128,7 @@ namespace IntuneWinAppUtilDecoder
             }
             else
             {
-                // extract, read Detection.xml and decrypt
+                // extract the .intunewin and read Detection.xml and then decrypt
                 try
                 {
                     ZipFile.ExtractToDirectory(intunewinPath, extractPath);
@@ -136,6 +139,7 @@ namespace IntuneWinAppUtilDecoder
                     return;
                 }
 
+                // internal structure of a .intunewin package
                 const string metadataPath = @"IntuneWinPackage\Metadata";
                 const string contentsPath = @"IntuneWinPackage\Contents";
 
@@ -169,6 +173,7 @@ namespace IntuneWinAppUtilDecoder
                             return;
                         }
 
+                        // here we are actually decrypting the encrypted .intunewin file now
                         if (!Decrypt(sourceFile, targetFile, encryptionKey.Value, initializationVector.Value))
                             return;
 
