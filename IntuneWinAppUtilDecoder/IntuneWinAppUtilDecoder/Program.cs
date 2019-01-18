@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
+using System.Net;
 using System.Security.Cryptography;
 using System.Xml.Linq;
 
@@ -59,6 +60,19 @@ namespace IntuneWinAppUtilDecoder
             string basePath;
             string targetFile;
             string extractPath;
+
+            if (intunewinPath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                intunewinPath.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                var webClient = new WebClient();
+                var url = intunewinPath;
+                var tempPath = Path.Combine(Path.GetTempPath(), Path.GetTempFileName());
+                LogUtil.WriteLine($"http location specified, downloading .intunewin here: {tempPath}");
+                LogUtil.Write($"downloading ...");
+                webClient.DownloadFile(url, tempPath);
+                LogUtil.WriteLine($" done!");
+                intunewinPath = tempPath;
+            }
             
             if (File.Exists(intunewinPath))
             {
