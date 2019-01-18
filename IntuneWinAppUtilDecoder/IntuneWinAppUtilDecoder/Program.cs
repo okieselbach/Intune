@@ -284,7 +284,7 @@ namespace IntuneWinAppUtilDecoder
             LogUtil.WriteLine("With Keys:   IntuneWinAppUtilDecoder.exe \"C:\\Temp\\EncryptedMyWin32Package.intunewin\" /key:AbC= /iv:XyZ==");
             LogUtil.WriteLine("");
             LogUtil.WriteLine("When using Key and IV parameter information you must provide a path to the encrypted .intunewin file.");
-            LogUtil.WriteLine("This mode can also be combined with /silent parameter");
+            LogUtil.WriteLine("This mode can also be combined with /silent parameter. URLs are also supported instead of file path for intunewin.");
 #if DEBUG
             LogUtil.ReadKey();
 #endif
