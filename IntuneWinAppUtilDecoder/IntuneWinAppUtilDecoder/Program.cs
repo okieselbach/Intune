@@ -25,16 +25,20 @@ namespace IntuneWinAppUtilDecoder
                     {
                         foreach (var str in args)
                         {
-                            if (str.StartsWith("/key:", StringComparison.OrdinalIgnoreCase))
+                            if (str.StartsWith("/key:", StringComparison.OrdinalIgnoreCase) ||
+                                str.StartsWith("-key:", StringComparison.OrdinalIgnoreCase))
                             {
                                 predefinedEncryptionKey = str.Remove(0, 5);
                             }
-                            if (str.StartsWith("/iv:", StringComparison.OrdinalIgnoreCase))
+                            if (str.StartsWith("/iv:", StringComparison.OrdinalIgnoreCase) ||
+                                str.StartsWith("-iv:", StringComparison.OrdinalIgnoreCase))
                             {
                                 predefinedInitializationVector = str.Remove(0, 4);
                             }
                             if (string.Compare(str, "/s", StringComparison.OrdinalIgnoreCase) == 0 ||
-                                string.Compare(str, "/silent", StringComparison.OrdinalIgnoreCase) == 0)
+                                string.Compare(str, "/silent", StringComparison.OrdinalIgnoreCase) == 0 ||
+                                string.Compare(str, "-s", StringComparison.OrdinalIgnoreCase) == 0 ||
+                                string.Compare(str, "-silent", StringComparison.OrdinalIgnoreCase) == 0)
                             {
                                 LogUtil.Silent = true;
                             }
