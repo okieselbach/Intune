@@ -53,4 +53,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>if $(ConfigurationName) == Release (powershell Compress-Archive -Path '$(TargetDir)*.exe' -DestinationPath '$(TargetDir)IntuneWinAppUtilDecoder.zip' -Force)</PostBuildEvent>
+  </PropertyGroup>
 </Project>
