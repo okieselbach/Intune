@@ -232,8 +232,11 @@ namespace IntuneWinAppUtilDecoder
                     transform = aes?.CreateDecryptor(key, iv);
 
                     fileStreamSource = File.Open(sourceFile, FileMode.Open, FileAccess.Read, FileShare.None);
-                    cryptoStream = new CryptoStream(fileStreamTarget, transform, CryptoStreamMode.Write);
+                    //skip first 48 bytes... some IV stuff there which is not necessary for the archive
+                    fileStreamSource.Seek(48L, SeekOrigin.Begin);
 
+                    cryptoStream = new CryptoStream(fileStreamTarget, transform, CryptoStreamMode.Write);
+                    
                     int count, tracker = 0;
                     while ((count = fileStreamSource.Read(buffer, 0, 2097152)) > 0)
                     {
