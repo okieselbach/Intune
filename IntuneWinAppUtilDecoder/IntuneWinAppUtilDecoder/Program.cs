@@ -286,7 +286,7 @@ namespace IntuneWinAppUtilDecoder
             LogUtil.WriteLine();
             LogUtil.WriteLine("IntuneWinAppUtilDecoder by Oliver Kieselbach (oliverkieselbach.com)");
             LogUtil.WriteLine("This utility will decode an encrypted .intunewin package which was built with the");
-            LogUtil.WriteLine("'Microsoft Intune Win32 App Packaging Tool' (https://github.com/Microsoft/Intune-Win32-App-Packaging-Tool)");
+            LogUtil.WriteLine("'Microsoft Intune Win32 App Packaging Tool' (https://github.com/Microsoft/Microsoft-Win32-Content-Prep-Tool)");
             LogUtil.WriteLine();
             LogUtil.WriteLine("USAGE: IntuneWinAppUtilDecoder.exe <FullPathToIntunewinFile> [/s | /silent] [/key:base64encodedKey /iv:base64encodedIV]");
             LogUtil.WriteLine();
