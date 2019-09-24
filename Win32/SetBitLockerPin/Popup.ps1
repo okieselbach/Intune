@@ -39,7 +39,11 @@ $formBitLockerStartupPIN_Load = {
 }
 
 $buttonSetPIN_Click = {
-	if ($textboxNewPin.Text.Length -gt 0 -and $textboxNewPin.Text.Length -lt $global:MinimumPIN) {
+	If ($textboxNewPin.Text.StartsWith("0") -eq $true) {
+		$labelPINIsNotEqual.Text = "No leading 0 allowed"
+		$labelPINIsNotEqual.Visible = $true
+	}
+	elseif ($textboxNewPin.Text.Length -gt 0 -and $textboxNewPin.Text.Length -lt $global:MinimumPIN) {
 		$labelPINIsNotEqual.Text = "PIN is not long enough"
 		$labelPINIsNotEqual.Visible = $true
 	}
