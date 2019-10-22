@@ -1,6 +1,7 @@
 ﻿# Author: Oliver Kieselbach (oliverkieselbach.com)
 # Date: 08/01/2019
 # Description: Creates a Windows Forms Dialog for BitLocker PIN entry.
+# - 10/21/2019 changed PIN handover
  
 # The script is provided "AS IS" with no warranties.
 
@@ -23,6 +24,7 @@ $textboxRetypedPin = New-Object System.Windows.Forms.TextBox
 $textboxNewPin = New-Object System.Windows.Forms.TextBox
 
 $formBitLockerStartupPIN_Load = {
+
 	$formBitLockerStartupPIN.Activate()
 	$textboxNewPin.Focus()
 	
@@ -39,18 +41,23 @@ $formBitLockerStartupPIN_Load = {
 }
 
 $buttonSetPIN_Click = {
-	If ($textboxNewPin.Text.StartsWith("0") -eq $true) {
-		$labelPINIsNotEqual.Text = "No leading 0 allowed"
-		$labelPINIsNotEqual.Visible = $true
-	}
-	elseif ($textboxNewPin.Text.Length -gt 0 -and $textboxNewPin.Text.Length -lt $global:MinimumPIN) {
+	if ($textboxNewPin.Text.Length -gt 0 -and $textboxNewPin.Text.Length -lt $global:MinimumPIN) {
 		$labelPINIsNotEqual.Text = "PIN is not long enough"
 		$labelPINIsNotEqual.Visible = $true
 	}
 	elseif ($textboxNewPin.Text -eq $textboxRetypedPin.Text) {
 		$labelPINIsNotEqual.Visible = $false
-		# return entered PIN as exit code to proceed
-		[Environment]::Exit($textboxNewPin.Text)
+		
+		# previous solution used exit code, this is problematic as it has a signed integer as max value which is not enough for 20 digit PIN
+		# exit code also had a problem when dialog got shutdown from windows, false PIN got picked up. Now we use a temp file for hand over.
+		# I use base64 encoding to prevent eavesdropping a bit. Handover is not bullet proof but should be enough.
+		$bytes = [System.Text.Encoding]::Unicode.GetBytes($textboxNewPin.Text)
+		$encodedText =[Convert]::ToBase64String($bytes)
+
+		$pathPINFile = $(Join-Path -Path $([Environment]::GetFolderPath("CommonDocuments")) -ChildPath "PIN-prompted.txt")
+		Out-File -FilePath $pathPINFile -InputObject $encodedText -Force
+	
+		[Environment]::Exit(0)
 	}
 	else {
 		$labelPINIsNotEqual.Text = "PIN is not equal"
