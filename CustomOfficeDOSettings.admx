@@ -1,0 +1,24 @@
+<policyDefinitions revision="1.0" schemaVersion="1.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <policyNamespaces>
+        <target prefix="Custom" namespace="Custom.Microsoft.Policies.Windows"/>
+        <using prefix="windows" namespace="Microsoft.Policies.Windows"/>
+    </policyNamespaces>
+    <resources minRequiredRevision="1.0" fallbackCulture="en-us"/>
+    <categories>
+        <category name="CustomOfficeDOSettings" displayName="Custom Office DO Settings" explainText="https://docs.microsoft.com/en-us/DeployOffice/delivery-optimization">
+            <parentCategory ref="windows:Custom" />
+        </category>
+    </categories>
+    <policies>
+        <policy name="SetDOAsPrimary" displayName="SetDOAsPrimary" explainText="https://docs.microsoft.com/en-us/DeployOffice/delivery-optimization" key="SOFTWARE\Policies\Microsoft\office\16.0\common\officeupdate" class="Machine" valueName="SetDOAsPrimary">
+            <parentCategory ref="CustomOfficeDOSettings"/>
+            <supportedOn ref="windows:SUPPORTED_Windows7" />
+            <enabledValue>
+                <decimal value="1" />
+            </enabledValue>
+            <disabledValue>
+                <decimal value="0" />
+            </disabledValue>
+        </policy>
+    </policies>
+</policyDefinitions>
