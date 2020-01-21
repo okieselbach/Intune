@@ -212,7 +212,7 @@ These devices couldn't be deleted:
 
     # according to the docs the current max batch count is 20
     # https://github.com/microsoftgraph/microsoft-graph-docs/blob/master/concepts/known-issues.md#limit-on-batch-size
-    $batchMaxCount = 2;
+    $batchMaxCount = 20;
     $batchCount = 0
 
     if ($serialNumbers.Count -gt 0){
