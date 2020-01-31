@@ -295,7 +295,7 @@ These devices couldn't be deleted:
 Connect-MSGraph | Out-Null
 
 $CsvFile = "C:\temp\autopilot-devices.csv"
-Start-AutopilotCleanupCSV -CsvFile $CsvFile -IntuneCleanup -ShowCleanupRequestOnly
+Start-AutopilotCleanupCSV -CsvFile $CsvFile
 
 Write-Output "`nInvoking Autopilot sync..."
 Start-Sleep -Seconds 15
