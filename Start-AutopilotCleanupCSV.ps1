@@ -204,7 +204,7 @@ These devices couldn't be deleted:
     $graphApiVersion = "Beta"
     $graphUrl = "https://graph.microsoft.com/$graphApiVersion"
 
-    # get all unique Device Serial Numbers from the CSV file (column must be named 'Device Servial Number')
+    # get all unique Device Serial Numbers from the CSV file (column must be named 'Device Serial Number')
     $serialNumbers = Import-Csv $CsvFile | Select-Object -Unique 'Device Serial Number' | Select-Object -ExpandProperty 'Device Serial Number'
 
     # collection for the batch job deletion requests
@@ -261,7 +261,7 @@ These devices couldn't be deleted:
                     $device = Get-AutoPilotDevice -serial $serialNumbers[$i]
     
                     if ($device.id){
-                        # building the request batch job collection with the first device id
+                        # building the request batch job collection with the device id
                         $requests += [pscustomobject]@{
                             id = $serialNumbers[$i]
                             method = "DELETE"
