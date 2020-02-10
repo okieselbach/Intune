@@ -2,6 +2,7 @@
 # Date: 08/01/2019
 # Description: Starts the Windows Forms Dialog for BitLocker PIN entry and receives the PIN via exit code to set the additional key protector
 # - 10/21/2019 changed PIN handover
+# - 02/10/2020 added content length check
  
 # The script is provided "AS IS" with no warranties.
 
@@ -12,8 +13,10 @@ $pathPINFile = $(Join-Path -Path $([Environment]::GetFolderPath("CommonDocuments
 
 If ($exitCode -eq 0 -And (Test-Path -Path $pathPINFile)) { 
     $encodedText = Get-Content -Path $pathPINFile
-    $PIN = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($encodedText))
-    Add-BitLockerKeyProtector -MountPoint $env:SystemDrive -Pin $(ConvertTo-SecureString $PIN -AsPlainText -Force) -TpmAndPinProtector
+    if ($encodedText.Length -gt 0) {
+        $PIN = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($encodedText))
+        Add-BitLockerKeyProtector -MountPoint $env:SystemDrive -Pin $(ConvertTo-SecureString $PIN -AsPlainText -Force) -TpmAndPinProtector
+    }
 }
 
 # Cleanup
