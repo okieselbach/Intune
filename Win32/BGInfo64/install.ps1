@@ -12,6 +12,7 @@ His version can be found here: https://nhogarth.net/2018/12/14/intune-win32-app-
 
 Release notes:
 Version 1.0: Original published version.
+Version 1.1: Fix output to use ascii
 
 The script is provided "AS IS" with no warranties.
 #>
@@ -61,6 +62,6 @@ Else
 End If
 "@
 
-$CheckAdminScript | Out-File -FilePath "C:\Program Files\BGInfo\CheckAdmin.vbs" -Encoding utf8 -Force -Confirm:$false
+$CheckAdminScript | Out-File -FilePath "C:\Program Files\BGInfo\CheckAdmin.vbs" -Encoding ascii -Force -Confirm:$false
 
 Return 0
