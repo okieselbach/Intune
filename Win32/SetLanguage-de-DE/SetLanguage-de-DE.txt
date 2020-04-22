@@ -1,0 +1,10 @@
+Language = de-DE
+App ID   = 9p6ct0slw589
+SKI ID   = 0016
+GEO ID   = 94
+PFN      = Microsoft.LanguageExperiencePackde-DE_8wekyb3d8bbwe
+ICON     = LXP-German.png
+
+DisplayName = Deutsch Local Experience Pack
+
+.\IntuneWinAppUtil -c .\SetLanguage-de-DE -s SetLanguage-de-DE.txt -o .\ -q

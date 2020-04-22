@@ -1,0 +1,10 @@
+Language = en-US
+App ID   = 9pdscc711rvf
+SKI ID   = 0016
+GEO ID   = 244
+PFN      = Microsoft.LanguageExperiencePacken-US_8wekyb3d8bbwe
+ICON     = LXP-English.png
+
+DisplayName = English (United States) Local Experience Pack
+
+.\IntuneWinAppUtil -c .\SetLanguage-en-US -s SetLanguage-en-US.txt -o .\ -q
