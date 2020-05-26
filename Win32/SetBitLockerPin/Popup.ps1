@@ -2,6 +2,7 @@
 # Date: 08/01/2019
 # Description: Creates a Windows Forms Dialog for BitLocker PIN entry.
 # - 10/21/2019 changed PIN handover
+# - 05/26/2020 added PIN length zero check
  
 # The script is provided "AS IS" with no warranties.
 
@@ -41,7 +42,7 @@ $formBitLockerStartupPIN_Load = {
 }
 
 $buttonSetPIN_Click = {
-	if ($textboxNewPin.Text.Length -gt 0 -and $textboxNewPin.Text.Length -lt $global:MinimumPIN) {
+	if ($textboxNewPin.Text.Length -eq 0 -or ($textboxNewPin.Text.Length -gt 0 -and $textboxNewPin.Text.Length -lt $global:MinimumPIN)) {
 		$labelPINIsNotEqual.Text = "PIN is not long enough"
 		$labelPINIsNotEqual.Visible = $true
 	}
