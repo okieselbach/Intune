@@ -3,6 +3,7 @@
 # Description: Creates a Windows Forms Dialog for BitLocker PIN entry.
 # - 10/21/2019 changed PIN handover
 # - 05/26/2020 added PIN length zero check
+# - 07/13/2020 added Enhanced PIN check and advise
  
 # The script is provided "AS IS" with no warranties.
 
@@ -32,13 +33,19 @@ $formBitLockerStartupPIN_Load = {
 	try {
 		$global:MinimumPIN = ""
 		$global:MinimumPIN = Get-ItemPropertyValue HKLM:\SOFTWARE\Policies\Microsoft\FVE -Name MinimumPIN -ErrorAction SilentlyContinue
+
+		$global:EnhancedPIN = ""
+		$global:EnhancedPIN = Get-ItemPropertyValue HKLM:\SOFTWARE\Policies\Microsoft\FVE -Name UseEnhancedPin -ErrorAction SilentlyContinue
 	}
 	catch { }
-	
+	$characters = "numbers"
+	if ($global:EnhancedPIN -eq 1) {
+		$characters = "characters"
+	}
 	if ($global:MinimumPIN -isnot [int] -or $global:MinimumPIN -lt 4) {
 		$global:MinimumPIN = 6
 	}
-	$labelChoosePin.Text = "Choose a PIN that's $global:MinimumPIN-20 numbers long."
+	$labelChoosePin.Text = "Choose a PIN that's $global:MinimumPIN-20 $characters long."
 }
 
 $buttonSetPIN_Click = {
