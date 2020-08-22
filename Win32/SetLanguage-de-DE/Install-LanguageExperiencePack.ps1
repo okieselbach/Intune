@@ -48,7 +48,11 @@ $applicationId = "9p6ct0slw589" # german
 #$packageFamilyName = 'Microsoft.LanguageExperiencePacken-US_8wekyb3d8bbwe' # english
 
 # https://bspmts.mp.microsoft.com/v1/public/catalog/Retail/Products/9p6ct0slw589/applockerdata
-$packageFamilyName = 'Microsoft.LanguageExperiencePackde-DE_8wekyb3d8bbwe' # german
+#$packageFamilyName = 'Microsoft.LanguageExperiencePackde-DE_8wekyb3d8bbwe' # german
+
+# Andrew Cooper simplified it even more to automatically parse the packageFamilyName, thanks for this small tweak even less to configure then
+$webpage = Invoke-WebRequest -UseBasicParsing -Uri "https://bspmts.mp.microsoft.com/v1/public/catalog/Retail/Products/$applicationId/applockerdata"
+$packageFamilyName = ($webpage | ConvertFrom-JSON).packageFamilyName
 
 # found in Business Store:
 # https://businessstore.microsoft.com/en-us/manage/inventory/apps/9P6CT0SLW589/0016/00000000000000000000000000000000;tab=users
