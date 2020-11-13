@@ -1,6 +1,6 @@
 <#
 Version: 1.0
-Author: Oliver Kieselbach
+Author: Oliver Kieselbach (oliverkieselbach.com)
 Script: DisablePromptOnSecureDesktop.ps1
 
 Description:
