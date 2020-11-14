@@ -1,3 +1,9 @@
+<#
+Author: Oliver Kieselbach (oliverkieselbach.com)
+Script: Create-CmtraceMRU.ps1
+The script is provided "AS IS" with no warranties.
+#>
+
 # write cmtrace MRU list for SYSTEM user
 & REG DELETE HKCU\Software\Microsoft\Trace32 /f /reg:64 | Out-Null
 & REG ADD HKCU\Software\Microsoft\Trace32 /v "Register File Types" /t REG_SZ /d "1" /f /reg:64 | Out-Null
