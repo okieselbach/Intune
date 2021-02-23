@@ -318,7 +318,7 @@ function Set-Wallpaper
 Write-Log -Message "-Start script block" -LogLevel Information
 
 # blob storage base URL to get the wallpapers from
-$global:baseUrl = "https://gktatooineblobs.blob.core.windows.net/resources" 
+$global:baseUrl = "https://XXXX.blob.core.windows.net/resources" 
 
 # Image name pattern based on variables and ratio e.g. wallpaper-16x9.jpg
 $global:wallpaper = "wallpaper"
