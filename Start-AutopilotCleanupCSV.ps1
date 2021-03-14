@@ -258,12 +258,18 @@ These devices couldn't be deleted:
             if ($i -ne $serialNumbers.Count){
                 try{
                     # check if device with serial number exists otherwise it will be skipped
-                    $device = Get-AutoPilotDevice -serial $serialNumbers[$i]
+                    if ($serialNumbers.Count -eq 1) {
+                        $serial = $serialNumbers
+                    }
+                    else {
+                        $serial = $serialNumbers[$i]
+                    }
+                    $device = Get-AutoPilotDevice -serial $serial
     
                     if ($device.id){
                         # building the request batch job collection with the device id
                         $requests += [pscustomobject]@{
-                            id = $serialNumbers[$i]
+                            id = $serial
                             method = "DELETE"
                             url = "/deviceManagement/windowsAutopilotDeviceIdentities/$($device.id)"
                         }
@@ -271,14 +277,14 @@ These devices couldn't be deleted:
                         # try to delete the managed Intune device object, otherwise the Autopilot record can't be deleted (enrolled devices can't be deleted)
                         # under normal circumstances the Intune device object should already be deleted, devices should be retired and wiped before off-lease or disposal
                         if ($IntuneCleanup -and -not $ShowCleanupRequestOnly){
-                            Get-IntuneManagedDevice | Where-Object serialNumber -eq $serialNumbers[$i] | Remove-DeviceManagement_ManagedDevices
+                            Get-IntuneManagedDevice | Where-Object serialNumber -eq $serial | Remove-DeviceManagement_ManagedDevices
 
                             # enhancement option: delete AAD record as well
                             # side effect: all BitLocker keys will be lost, maybe delete the AAD record at later time separately
                         }
                     }
                     else{
-                        Write-Host "$($serialNumbers[$i]) not found, skipping device entry"
+                        Write-Host "$($serial) not found, skipping device entry"
                     }
                 }
                 catch{
@@ -297,9 +303,10 @@ Connect-MSGraph | Out-Null
 $CsvFile = "C:\temp\autopilot-devices.csv"
 Start-AutopilotCleanupCSV -CsvFile $CsvFile
 
-Write-Output "`nInvoking Autopilot sync..."
-Start-Sleep -Seconds 15
-Invoke-AutopilotSync
+# I think the sync is not really necessary here. Should be reflected automatically without triggering the sync.
+#Write-Output "`nInvoking Autopilot sync..."
+#Start-Sleep -Seconds 15
+#Invoke-AutopilotSync
 
 Write-Output "`nWaiting 60 seconds to re-check if devices are deleted..."
 Start-Sleep -Seconds 60
@@ -307,7 +314,7 @@ Start-Sleep -Seconds 60
 # Check if all Autopilot devices are successfully deleted
 $serialNumbers = Import-Csv $CsvFile | Select-Object -Unique 'Device Serial Number' | Select-Object -ExpandProperty 'Device Serial Number'
 
-Write-Output "`nThese devices couldn't be deleted:"
+Write-Output "`nThese devices couldn't be deleted (if no device is listed, everything went well):"
 foreach ($serialNumber in $serialNumbers){
     $device = Get-AutoPilotDevice -serial $serialNumber
     $device.serialNumber
