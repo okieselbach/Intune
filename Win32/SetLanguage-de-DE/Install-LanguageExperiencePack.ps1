@@ -14,6 +14,7 @@ The script must run in SYSTEM context because of MDM bridge WMI Provider!
 
 Release notes:
 Version 1.0: 2020-04-22 - Original published version.
+Version 1.1: 2021-03-23 - Fix Preferred Language setting and changed appx install logic, thx @SteffenAtCloud
 
 The script is provided "AS IS" with no warranties.
 #>
@@ -54,7 +55,7 @@ $applicationId = "9p6ct0slw589" # german
 $webpage = Invoke-WebRequest -UseBasicParsing -Uri "https://bspmts.mp.microsoft.com/v1/public/catalog/Retail/Products/$applicationId/applockerdata"
 $packageFamilyName = ($webpage | ConvertFrom-JSON).packageFamilyName
 
-# found in Business Store:
+# found in Business Store (looks like it is always 16 :-)):
 # https://businessstore.microsoft.com/en-us/manage/inventory/apps/9P6CT0SLW589/0016/00000000000000000000000000000000;tab=users
 $skuId = 0016
 
@@ -124,11 +125,24 @@ Start-Transcript -Path "`$env:TEMP\LXP-UserSession-Config-`$language.log" | Out-
 `$appxLxpPath = (Get-AppxPackage | Where-Object Name -Like *LanguageExperiencePack`$language).InstallLocation
 Add-AppxPackage -Register -Path "`$appxLxpPath\AppxManifest.xml" -DisableDevelopmentMode
 
+# important for regional change like date and time...
 "Set-WinUILanguageOverride = `$language"
 Set-WinUILanguageOverride -Language `$language
 
 "Set-WinUserLanguageList = `$language"
-Set-WinUserLanguageList `$language -Force
+
+#Set-WinUserLanguageList `$language -Force
+# changed handling due to new knowledge :-)
+# https://oliverkieselbach.com/2021/01/13/company-portal-stuck-in-a-different-language/
+
+`$OldList = Get-WinUserLanguageList
+`$UserLanguageList = New-WinUserLanguageList -Language `$language
+`$UserLanguageList += `$OldList | where { `$_.LanguageTag -ne `$language }
+"Setting new user language list:"
+`$UserLanguageList | select LanguageTag
+""
+"Set-WinUserLanguageList -LanguageList ..."
+Set-WinUserLanguageList -LanguageList `$UserLanguageList -Force
 
 "Set-WinSystemLocale = `$language"
 Set-WinSystemLocale -SystemLocale `$language
@@ -157,87 +171,91 @@ oShell.Run sCmd,0,true
 & REG add "HKLM\Software\Policies\Microsoft\Control Panel\International" /v BlockCleanupOfUnusedPreinstalledLangPacks /t REG_DWORD /d 1 /f /reg:64
 "`n"
 
-# We trigger via MDM method (MDM/WMI Bridge) an install of the LXP via the Store... 
-# Imagine to navigate to the store and click the LXP to install, but this time fully programmatically :-). 
-# This way we do not have to maintain language cab files in our solution here! And the store install trigger 
-# does always download the latest correct version, even when used with newer Windows versions.
+$packageName = "Microsoft.LanguageExperiencePack$language"
+# check for installed Language Experience Pack (LXP), maybe already installed?
+$status = $(Get-AppxPackage -AllUsers -Name $packageName).Status
 
-# Here are the requirements for this scenario:
-
-# - The app is assigned to a user Azure Active Directory (AAD) identity in the Store for Business. 
-#   You can do this directly in the Store for Business or through a management server.
-# - The device requires connectivity to the Microsoft Store.
-# - Microsoft Store services must be enabled on the device. Note that the UI for the Microsoft Store can be disabled by the enterprise admin.
-# - The user must be signed in with their AAD identity.
-$namespaceName = "root\cimv2\mdm\dmmap"
+# create CIM session here as we need it for Store updates as well
 $session = New-CimSession
 
-# constructing the MDM instance and correct parameter for the 'StoreInstallMethod' function call
-$omaUri = "./Vendor/MSFT/EnterpriseModernAppManagement/AppInstallation"
-$newInstance = New-Object Microsoft.Management.Infrastructure.CimInstance "MDM_EnterpriseModernAppManagement_AppInstallation01_01", $namespaceName
-$property = [Microsoft.Management.Infrastructure.CimProperty]::Create("ParentID", $omaUri, "string", "Key")
-$newInstance.CimInstanceProperties.Add($property)
-$property = [Microsoft.Management.Infrastructure.CimProperty]::Create("InstanceID", $packageFamilyName, "String", "Key")
-$newInstance.CimInstanceProperties.Add($property)
-
-$flags = 0
-$paramValue = [Security.SecurityElement]::Escape($('<Application id="{0}" flags="{1}" skuid="{2}"/>' -f $applicationId, $flags, $skuId))
-$params = New-Object Microsoft.Management.Infrastructure.CimMethodParametersCollection
-$param = [Microsoft.Management.Infrastructure.CimMethodParameter]::Create("param", $paramValue, "String", "In")
-$params.Add($param)
-
 try {
-    try {
-        # we create the MDM instance and trigger the StoreInstallMethod to finally download the LXP
-        $instance = $session.CreateInstance($namespaceName, $newInstance)
-        $result = $session.InvokeMethod($namespaceName, $instance, "StoreInstallMethod", $params)
+    if ($status -ne "Ok")
+    {
+        try {
+            # We trigger via MDM method (MDM/WMI Bridge) an install of the LXP via the Store... 
+            # Imagine to navigate to the store and click the LXP to install, but this time fully programmatically :-). 
+            # This way we do not have to maintain language cab files in our solution here! And the store install trigger 
+            # does always download the latest correct version, even when used with newer Windows versions.
+
+            # Here are the requirements for this scenario:
+
+            # - The app is assigned to a user Azure Active Directory (AAD) identity in the Store for Business. 
+            #   You can do this directly in the Store for Business or through a management server.
+            # - The device requires connectivity to the Microsoft Store.
+            # - Microsoft Store services must be enabled on the device. Note that the UI for the Microsoft Store can be disabled by the enterprise admin.
+            # - The user must be signed in with their AAD identity.
+            $namespaceName = "root\cimv2\mdm\dmmap"
+
+            # constructing the MDM instance and correct parameter for the 'StoreInstallMethod' function call
+            $omaUri = "./Vendor/MSFT/EnterpriseModernAppManagement/AppInstallation"
+            $newInstance = New-Object Microsoft.Management.Infrastructure.CimInstance "MDM_EnterpriseModernAppManagement_AppInstallation01_01", $namespaceName
+            $property = [Microsoft.Management.Infrastructure.CimProperty]::Create("ParentID", $omaUri, "string", "Key")
+            $newInstance.CimInstanceProperties.Add($property)
+            $property = [Microsoft.Management.Infrastructure.CimProperty]::Create("InstanceID", $packageFamilyName, "String", "Key")
+            $newInstance.CimInstanceProperties.Add($property)
+
+            $flags = 0
+            $paramValue = [Security.SecurityElement]::Escape($('<Application id="{0}" flags="{1}" skuid="{2}"/>' -f $applicationId, $flags, $skuId))
+            $params = New-Object Microsoft.Management.Infrastructure.CimMethodParametersCollection
+            $param = [Microsoft.Management.Infrastructure.CimMethodParameter]::Create("param", $paramValue, "String", "In")
+            $params.Add($param)
+
+            # we create the MDM instance and trigger the StoreInstallMethod to finally download the LXP
+            $instance = $session.CreateInstance($namespaceName, $newInstance)
+            $result = $session.InvokeMethod($namespaceName, $instance, "StoreInstallMethod", $params)
+            "...Language Experience Pack install process triggered via MDM/StoreInstall method"
+        }
+        catch [Exception] {
+            write-host $_ | out-string
+            $exitcode = 1
+        }
     }
-    catch [Exception] {
-        write-host $_ | out-string
-        $exitcode = 1
-    }
 
-    if ($result.ReturnValue.Value -eq 0) {
-        "...Language Experience Pack install process triggered via MDM/StoreInstall method"
-        "...busy wait until language pack found, max 15 min."
+    if (($result.ReturnValue.Value -eq 0) -or ($status -eq "Ok")) {
 
-        $counter=0
-        do {
-            Start-Sleep 10
-            $counter++
+        if ($status -ne "Ok")
+        {
+            "...busy wait until language pack found, max 15 min."
+            $counter=0
+            do {
+                Start-Sleep 10
+                $counter++
 
-            # check for installed Language Experience Pack (LXP)
-            $packageName = "Microsoft.LanguageExperiencePack$language"
-            $status = $(Get-AppxPackage -AllUsers -Name $packageName).Status
-        
-        } while ($status -ne "Ok" -and $counter -ne 90) # 90x10s sleep => 900s => 15 min. max wait time!
+                # check for installed Language Experience Pack (LXP)
+                $status = $(Get-AppxPackage -AllUsers -Name $packageName).Status
+            
+            } while ($status -ne "Ok" -and $counter -ne 90) # 90x10s sleep => 900s => 15 min. max wait time!
+        }
 
         # print some LXP package details for the log
         Get-AppxPackage -AllUsers -Name $packageName
 
         if ($status -eq "Ok") {
             "...found Microsoft.LanguageExperiencePack$language with Status=Ok"
-
-            # to check for availability with "DISM.exe /Online /Get-Capabilities"
-
-            # we use dism /online /add-cpability switch to trigger an online install and dism will reach out to 
-            # Windows Update to get the latest correct source files
             "...trigger install for language FOD packages"
-            "`tLanguage.Basic~~~$language~0.0.1.0"
-            & DISM.exe /Online /Add-Capability /CapabilityName:Language.Basic~~~$language~0.0.1.0
-            "`n"
-            "`tLanguage.Handwriting~~~$language~0.0.1.0"
-            & DISM.exe /Online /Add-Capability /CapabilityName:Language.Handwriting~~~$language~0.0.1.0
-            "`n"
-            "`tLanguage.OCR~~~$language~0.0.1.0"
-            & DISM.exe /Online /Add-Capability /CapabilityName:Language.OCR~~~$language~0.0.1.0
-            "`n"
-            "`tLanguage.Speech~~~$language~0.0.1.0"
-            & DISM.exe /Online /Add-Capability /CapabilityName:Language.Speech~~~$language~0.0.1.0
-            "`n"
-            "`tLanguage.TextToSpeech~~~$language~0.0.1.0"
-            & DISM.exe /Online /Add-Capability /CapabilityName:Language.TextToSpeech~~~$language~0.0.1.0
-            "`n"
+
+            # add Windows capabilities / FODs to avoid UAC dialog after restart
+            # Parameter -Online will reach out to Windows Update to get the latest correct source files
+            Get-WindowsCapability -Online | Where-Object Name -ilike "Language.*~~~$($language)~*" | ForEach-Object {
+                if ($_.State -ine "Installed") {
+                    "Adding windows capability '$($_.Name)'..."
+                    $_ | Add-WindowsCapability -Online | Out-Null
+                }
+                else {
+                    "Windows capability '$($_.Name)' is already installed.`n"
+                }
+            }
+            "`n"           
 
             # we have to switch the language for the current user session. The powershell cmdlets must be run in the current logged on user context.
             # creating a temp scheduled task to run on-demand in the current user context does the trick here.
@@ -275,7 +293,7 @@ try {
 
             # trigger store updates, there might be new app versions due to the language change
             "...trigger MS Store updates for app updates"
-            Get-CimInstance -Namespace $namespaceName -ClassName "MDM_EnterpriseModernAppManagement_AppManagement01" | Invoke-CimMethod -MethodName "UpdateScanMethod"
+            Get-CimInstance -Namespace "root\cimv2\mdm\dmmap" -ClassName "MDM_EnterpriseModernAppManagement_AppManagement01" | Invoke-CimMethod -MethodName "UpdateScanMethod"
 
             $exitcode = 0
         }
@@ -285,12 +303,19 @@ try {
     }
 
     "...cleanup and finish"
-    $session.DeleteInstance($namespaceName, $instance) | Out-Null
-    Remove-CimSession -CimSession $session
-    Remove-Item -Path $scriptFolderPath -Force -Recurse
+    try {
+        $session.DeleteInstance($namespaceName, $instance) | Out-Null
+        Remove-CimSession -CimSession $session
+    } catch {}
+    
+    Remove-Item -Path $scriptFolderPath -Force -Recurse -ErrorAction SilentlyContinue
 }
 catch [Exception] {
-    $session.DeleteInstance($namespaceName, $instance) | Out-Null
+    # maybe a left over  to clean, but prevent aditional errors and set exitcode
+    try {
+        $session.DeleteInstance($namespaceName, $instance) | Out-Null
+    } catch {}
+
     $exitcode = 1
 }
 
