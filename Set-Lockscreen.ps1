@@ -28,7 +28,6 @@ Full path to your image file.
             $Path     
         ) 
 
-
     [Windows.System.UserProfile.LockScreen,Windows.System.UserProfile,ContentType=WindowsRuntime] | Out-Null
     Add-Type -AssemblyName System.Runtime.WindowsRuntime
 
