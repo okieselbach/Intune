@@ -4,6 +4,7 @@
 # - 10/21/2019 changed PIN handover
 # - 05/26/2020 added PIN length zero check
 # - 07/13/2020 added Enhanced PIN check and advise
+# - 05/21/2021 added more enhanced pin logic check if numbers only entered
  
 # The script is provided "AS IS" with no warranties.
 
@@ -33,7 +34,9 @@ $formBitLockerStartupPIN_Load = {
 	try {
 		$global:MinimumPIN = ""
 		$global:MinimumPIN = Get-ItemPropertyValue HKLM:\SOFTWARE\Policies\Microsoft\FVE -Name MinimumPIN -ErrorAction SilentlyContinue
-
+	}
+	catch { }
+	try {
 		$global:EnhancedPIN = ""
 		$global:EnhancedPIN = Get-ItemPropertyValue HKLM:\SOFTWARE\Policies\Microsoft\FVE -Name UseEnhancedPin -ErrorAction SilentlyContinue
 	}
@@ -50,10 +53,21 @@ $formBitLockerStartupPIN_Load = {
 
 $buttonSetPIN_Click = {
 	if ($textboxNewPin.Text.Length -eq 0 -or ($textboxNewPin.Text.Length -gt 0 -and $textboxNewPin.Text.Length -lt $global:MinimumPIN)) {
+		$labelPINIsNotEqual.ForeColor = 'Red'
 		$labelPINIsNotEqual.Text = "PIN is not long enough"
 		$labelPINIsNotEqual.Visible = $true
+		return
 	}
-	elseif ($textboxNewPin.Text -eq $textboxRetypedPin.Text) {
+	elseif ($global:EnhancedPIN -eq "" -or $global:EnhancedPIN -eq $null -or $global:EnhancedPIN -eq 0) {
+		if ($textboxNewPin.Text -NotMatch "^[\d\.]+$") {
+			$labelPINIsNotEqual.ForeColor = 'Red'
+			$labelPINIsNotEqual.Text = "Only numbers allowed"
+			$labelPINIsNotEqual.Visible = $true
+			return
+		}
+	}
+
+	if ($textboxNewPin.Text -eq $textboxRetypedPin.Text) {
 		$labelPINIsNotEqual.Visible = $false
 		
 		# previous solution used exit code, this is problematic as it has a signed integer as max value which is not enough for 20 digit PIN
@@ -65,9 +79,14 @@ $buttonSetPIN_Click = {
 		$pathPINFile = $(Join-Path -Path $([Environment]::GetFolderPath("CommonDocuments")) -ChildPath "PIN-prompted.txt")
 		Out-File -FilePath $pathPINFile -InputObject $encodedText -Force
 	
+		$labelPINIsNotEqual.ForeColor = 'MediumBlue'
+		$labelPINIsNotEqual.Text = "Setting valid PIN now..."
+		$labelPINIsNotEqual.Visible = $true
+		
 		[Environment]::Exit(0)
 	}
 	else {
+		$labelPINIsNotEqual.ForeColor = 'Red'
 		$labelPINIsNotEqual.Text = "PIN is not equal"
 		$labelPINIsNotEqual.Visible = $true
 	}
