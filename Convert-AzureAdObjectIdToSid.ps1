@@ -18,7 +18,7 @@ The Object ID to convert
     $array = New-Object 'UInt32[]' 4
 
     [Buffer]::BlockCopy($bytes, 0, $array, 0, 16)
-    $sid = "S-1-12-1-$array".Replace(' ', '-')
+    $sid = "S-1-12-1-$($array -join '-')"
 
     return $sid
 }
@@ -30,3 +30,6 @@ Write-Output $sid
 # Output:
 
 # S-1-12-1-1943430372-1249052806-2496021943-3034400218
+
+# You must be connected to AzureAD first, then run this:
+Get-AzureADUser | foreach {$_ | Select *, @{n='SID';e={Convert-AzureAdObjectIdToSid -ObjectId ($_.ObjectId)}}}
