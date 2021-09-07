@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>PayloadContent</key>
+		<array>
+			<dict>
+				<key>PayloadDisplayName</key>
+				<string>Munki</string>
+				<key>PayloadIdentifier</key>
+				<string>ManagedInstalls</string>
+				<key>PayloadType</key>
+				<string>ManagedInstalls</string>
+				<key>PayloadUUID</key>
+				<string>ca4afc37-7b1f-4a02-ae25-ccad258c253b</string>
+				<key>PayloadVersion</key>
+				<integer>1</integer>
+				<key>SoftwareRepoURL</key>
+				<string>https://XXXX.blob.core.windows.net/munki</string>
+				<key>SharedAccessSignature</key>
+				<string>XXXX</string>
+			</dict>
+		</array>
+		<key>PayloadIdentifier</key>
+		<string>DESKTOP-XXXXXXX.bce6b7aa-a585-4b21-a897-8f8f043db1cb</string>
+		<key>PayloadType</key>
+		<string>Configuration</string>
+		<key>PayloadUUID</key>
+		<string>41bd4632-0b83-404f-a68d-6ac1a2ac1eea</string>
+		<key>PayloadVersion</key>
+		<integer>1</integer>
+	</dict>
+</plist>
