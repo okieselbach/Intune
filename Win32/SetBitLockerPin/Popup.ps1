@@ -5,10 +5,62 @@
 # - 05/26/2020 added PIN length zero check
 # - 07/13/2020 added Enhanced PIN check and advise
 # - 05/21/2021 added more enhanced pin logic check if numbers only entered
+# - 09/30/2021 changed PIN handover to AES encryption/decryption via DPAPI and shared key
+#              added simple PIN check for incrementing and decrementing numbers e.g. 123456 and 654321
+#              language support (see language.json), default is always en-US
+#              changed temp storage location and temp file name
  
 # The script is provided "AS IS" with no warranties.
 
 # https://docs.microsoft.com/en-us/powershell/scripting/samples/creating-a-custom-input-box?view=powershell-6
+
+function Test-IncrementNumber
+{
+    param (
+        [String]
+        $NumberString
+    )
+    
+    $array = $NumberString.ToCharArray()
+    
+    for ($i=0; $i -lt $array.count-1; $i++)
+    {
+        if ($([int]$array[$i])+1 -eq $array[$i+1]) {
+            continue
+        }
+        else {
+            break
+        }
+    }
+    if ($i -eq $array.count-1) {
+        return $true
+    }
+    return $false
+}
+
+function Test-DecrementNumber
+{
+    param (
+        [String]
+        $NumberString
+    )
+    
+    $array = $NumberString.ToCharArray()
+    
+    for ($i=0; $i -lt $array.count-1; $i++)
+    {
+        if ($([int]$array[$i])-1 -eq $array[$i+1]) {
+            continue
+        }
+        else {
+            break
+        }
+    }
+    if ($i -eq $array.count-1) {
+        return $true
+    }
+    return $false
+}
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -26,6 +78,13 @@ $labelSetBLtartupPin = New-Object System.Windows.Forms.Label
 $textboxRetypedPin = New-Object System.Windows.Forms.TextBox
 $textboxNewPin = New-Object System.Windows.Forms.TextBox
 
+$uiLang = $(Get-Culture).Name
+$language = Get-Content language.json -Encoding UTF8 | ConvertFrom-Json
+# if current UI language is not available, switch to en-US as default
+if ($null -eq $language.$uiLang) {
+	$uiLang = "en-US"
+}
+
 $formBitLockerStartupPIN_Load = {
 
 	$formBitLockerStartupPIN.Activate()
@@ -41,53 +100,61 @@ $formBitLockerStartupPIN_Load = {
 		$global:EnhancedPIN = Get-ItemPropertyValue HKLM:\SOFTWARE\Policies\Microsoft\FVE -Name UseEnhancedPin -ErrorAction SilentlyContinue
 	}
 	catch { }
-	$characters = "numbers"
+	$characters = $language.$uiLang.numbers #"numbers"
 	if ($global:EnhancedPIN -eq 1) {
-		$characters = "characters"
+		$characters = $language.$uiLang.characters #"characters"
 	}
 	if ($global:MinimumPIN -isnot [int] -or $global:MinimumPIN -lt 4) {
 		$global:MinimumPIN = 6
 	}
-	$labelChoosePin.Text = "Choose a PIN that's $global:MinimumPIN-20 $characters long."
+	$labelChoosePin.Text = $language.$uiLang.choosePin -f $global:MinimumPIN, $characters #"Choose a PIN that's $global:MinimumPIN-20 $characters long."
 }
 
 $buttonSetPIN_Click = {
 	if ($textboxNewPin.Text.Length -eq 0 -or ($textboxNewPin.Text.Length -gt 0 -and $textboxNewPin.Text.Length -lt $global:MinimumPIN)) {
 		$labelPINIsNotEqual.ForeColor = 'Red'
-		$labelPINIsNotEqual.Text = "PIN is not long enough"
+		$labelPINIsNotEqual.Text = $language.$uiLang.PinIsNotEqualNotLongEnough #"PIN is not long enough"
 		$labelPINIsNotEqual.Visible = $true
 		return
 	}
 	elseif ($global:EnhancedPIN -eq "" -or $global:EnhancedPIN -eq $null -or $global:EnhancedPIN -eq 0) {
 		if ($textboxNewPin.Text -NotMatch "^[\d\.]+$") {
 			$labelPINIsNotEqual.ForeColor = 'Red'
-			$labelPINIsNotEqual.Text = "Only numbers allowed"
+			$labelPINIsNotEqual.Text = $language.$uiLang.PinIsNotEqualOnlyNumbers #"Only numbers allowed"
 			$labelPINIsNotEqual.Visible = $true
 			return
 		}
 	}
 
 	if ($textboxNewPin.Text -eq $textboxRetypedPin.Text) {
+		if ($(Test-IncrementNumber -NumberString $textboxNewPin.Text) -or $(Test-DecrementNumber -NumberString $textboxNewPin.Text)) {
+			$labelPINIsNotEqual.ForeColor = 'Red'
+			$labelPINIsNotEqual.Text = $language.$uiLang.PinIsTooSimple #"PIN is too simple"
+			$labelPINIsNotEqual.Visible = $true
+			return
+		}
+
 		$labelPINIsNotEqual.Visible = $false
 		
-		# previous solution used exit code, this is problematic as it has a signed integer as max value which is not enough for 20 digit PIN
-		# exit code also had a problem when dialog got shutdown from windows, false PIN got picked up. Now we use a temp file for hand over.
-		# I use base64 encoding to prevent eavesdropping a bit. Handover is not bullet proof but should be enough.
-		$bytes = [System.Text.Encoding]::Unicode.GetBytes($textboxNewPin.Text)
-		$encodedText =[Convert]::ToBase64String($bytes)
+		# using DPAPI with a random generated shared 256-bit key to encrypt the PIN
+		$key = (43,155,164,59,21,127,28,43,81,18,198,145,127,51,72,55,39,23,228,166,146,237,41,131,176,14,4,67,230,81,212,214)
+		$secure = ConvertTo-SecureString $textboxNewPin.Text -AsPlainText -Force
+		$encodedText = ConvertFrom-SecureString -SecureString $secure -Key $key
 
-		$pathPINFile = $(Join-Path -Path $([Environment]::GetFolderPath("CommonDocuments")) -ChildPath "PIN-prompted.txt")
+		#$pathPINFile = $(Join-Path -Path $([Environment]::GetFolderPath("CommonDocuments")) -ChildPath "168ba6df825678e4da1a.tmp")
+		$pathPINFile = $(Join-Path -Path "$env:SystemRoot\tracing" -ChildPath "168ba6df825678e4da1a.tmp")
 		Out-File -FilePath $pathPINFile -InputObject $encodedText -Force
 	
 		$labelPINIsNotEqual.ForeColor = 'MediumBlue'
-		$labelPINIsNotEqual.Text = "Setting valid PIN now..."
+		$labelPINIsNotEqual.Text = $language.$uiLang.PinIsNotEqualSettingNow #"Setting valid PIN now..."
 		$labelPINIsNotEqual.Visible = $true
 		
-		[Environment]::Exit(0)
+		$formBitLockerStartupPIN.Close()
+		[Environment]::ExitCode = 0
 	}
 	else {
 		$labelPINIsNotEqual.ForeColor = 'Red'
-		$labelPINIsNotEqual.Text = "PIN is not equal"
+		$labelPINIsNotEqual.Text = $language.$uiLang.PinIsNotEqual #"PIN is not equal"
 		$labelPINIsNotEqual.Visible = $true
 	}
 }
@@ -96,7 +163,9 @@ $buttonCancel_Click = {
 	$labelPINIsNotEqual.Visible = $false
 	$textboxNewPin.Text = ""
 	$textboxRetypedPin.Text = ""
-	[Environment]::Exit(0)
+
+	$formBitLockerStartupPIN.Close()
+	[Environment]::ExitCode = 0
 }
 
 $textboxRetypedPin_KeyUp = [System.Windows.Forms.KeyEventHandler]{
@@ -1682,19 +1751,19 @@ $formBitLockerStartupPIN.MinimizeBox = $False
 $formBitLockerStartupPIN.Name = 'formBitLockerStartupPIN'
 $formBitLockerStartupPIN.SizeGripStyle = 'Hide'
 $formBitLockerStartupPIN.StartPosition = 'CenterScreen'
-$formBitLockerStartupPIN.Text = "BitLocker startup PIN ($env:SystemDrive)"
+$formBitLockerStartupPIN.Text = "$($language.$uiLang.BitLockerStartupPIN) ($env:SystemDrive)" #"BitLocker startup PIN ($env:SystemDrive)"
 $formBitLockerStartupPIN.TopMost = $True
 $formBitLockerStartupPIN.add_Load($formBitLockerStartupPIN_Load)
 
 # labelPINIsNotEqual
 $labelPINIsNotEqual.AutoSize = $True
 $labelPINIsNotEqual.ForeColor = 'Red'
-$labelPINIsNotEqual.Location = '284, 181'
+$labelPINIsNotEqual.Location = '275, 181'
 $labelPINIsNotEqual.Margin = '4, 0, 4, 0'
 $labelPINIsNotEqual.Name = 'labelPINIsNotEqual'
 $labelPINIsNotEqual.Size = '105, 21'
 $labelPINIsNotEqual.TabIndex = 9
-$labelPINIsNotEqual.Text = 'PIN is not equal'
+$labelPINIsNotEqual.Text = $language.$uiLang.PinIsNotEqual #'PIN is not equal'
 $labelPINIsNotEqual.UseCompatibleTextRendering = $True
 $labelPINIsNotEqual.Visible = $False
 
@@ -1705,7 +1774,7 @@ $labelRetypePIN.Margin = '4, 0, 4, 0'
 $labelRetypePIN.Name = 'labelRetypePIN'
 $labelRetypePIN.Size = '82, 21'
 $labelRetypePIN.TabIndex = 8
-$labelRetypePIN.Text = 'Re-type PIN'
+$labelRetypePIN.Text = $language.$uiLang.RetypePIN #'Re-type PIN'
 $labelRetypePIN.UseCompatibleTextRendering = $True
 
 # labelNewPIN
@@ -1715,7 +1784,7 @@ $labelNewPIN.Margin = '4, 0, 4, 0'
 $labelNewPIN.Name = 'labelNewPIN'
 $labelNewPIN.Size = '61, 21'
 $labelNewPIN.TabIndex = 7
-$labelNewPIN.Text = 'New PIN'
+$labelNewPIN.Text = $language.$uiLang.NewPIN #'New PIN'
 $labelNewPIN.UseCompatibleTextRendering = $True
 
 # labelChoosePin
@@ -1744,7 +1813,7 @@ $buttonCancel.Margin = '4, 4, 4, 4'
 $buttonCancel.Name = 'buttonCancel'
 $buttonCancel.Size = '100, 30'
 $buttonCancel.TabIndex = 4
-$buttonCancel.Text = '&Cancel'
+$buttonCancel.Text = $language.$uiLang.buttonCancel #'&Cancel'
 $buttonCancel.UseCompatibleTextRendering = $True
 $buttonCancel.UseVisualStyleBackColor = $True
 $buttonCancel.add_Click($buttonCancel_Click)
@@ -1755,7 +1824,7 @@ $buttonSetPIN.Margin = '4, 4, 4, 4'
 $buttonSetPIN.Name = 'buttonSetPIN'
 $buttonSetPIN.Size = '100, 30'
 $buttonSetPIN.TabIndex = 3
-$buttonSetPIN.Text = '&Set PIN'
+$buttonSetPIN.Text = $language.$uiLang.buttonSetPin #'&Set PIN'
 $buttonSetPIN.UseCompatibleTextRendering = $True
 $buttonSetPIN.UseVisualStyleBackColor = $True
 $buttonSetPIN.add_Click($buttonSetPIN_Click)
@@ -1769,10 +1838,10 @@ $labelSetBLtartupPin.Margin = '4, 0, 4, 0'
 $labelSetBLtartupPin.Name = 'labelSetBLtartupPin'
 $labelSetBLtartupPin.Size = '244, 34'
 $labelSetBLtartupPin.TabIndex = 2
-$labelSetBLtartupPin.Text = 'Set BitLocker startup PIN'
+$labelSetBLtartupPin.Text = $language.$uiLang.labelSetBLStartupPin #'Set BitLocker startup PIN'
 
 # textboxRetypedPin
-$textboxRetypedPin.Location = '133, 143'
+$textboxRetypedPin.Location = '140, 143'
 $textboxRetypedPin.Margin = '4, 4, 4, 4'
 $textboxRetypedPin.Name = 'textboxRetypedPin'
 $textboxRetypedPin.Size = '214, 23'
@@ -1781,7 +1850,7 @@ $textboxRetypedPin.UseSystemPasswordChar = $True
 $textboxRetypedPin.add_KeyUp($textboxRetypedPin_KeyUp)
 
 # textboxNewPin
-$textboxNewPin.Location = '133, 102'
+$textboxNewPin.Location = '140, 102'
 $textboxNewPin.Margin = '4, 4, 4, 4'
 $textboxNewPin.Name = 'textboxNewPin'
 $textboxNewPin.Size = '214, 23'
