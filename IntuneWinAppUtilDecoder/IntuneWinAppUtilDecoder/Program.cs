@@ -11,8 +11,10 @@ namespace IntuneWinAppUtilDecoder
     {
         static void Main(string[] args)
         {
+
             var predefinedEncryptionKey = string.Empty;
             var predefinedInitializationVector = string.Empty;
+            var predefinedPath = string.Empty;
 
             // get command line parameters
             switch (args.Length)
@@ -21,44 +23,49 @@ namespace IntuneWinAppUtilDecoder
                     PrintUsage();
                     return;
                 default:
-                {
-                    if (args.Length > 1)
                     {
-                        foreach (var str in args)
+                        if (args.Length > 1)
                         {
-                            if (str.StartsWith("/key:", StringComparison.OrdinalIgnoreCase) ||
-                                str.StartsWith("-key:", StringComparison.OrdinalIgnoreCase))
+                            foreach (var str in args)
                             {
-                                predefinedEncryptionKey = str.Remove(0, 5);
-                            }
-                            if (str.StartsWith("/iv:", StringComparison.OrdinalIgnoreCase) ||
-                                str.StartsWith("-iv:", StringComparison.OrdinalIgnoreCase))
-                            {
-                                predefinedInitializationVector = str.Remove(0, 4);
-                            }
-                            if (string.Compare(str, "/s", StringComparison.OrdinalIgnoreCase) == 0 ||
-                                string.Compare(str, "/silent", StringComparison.OrdinalIgnoreCase) == 0 ||
-                                string.Compare(str, "-s", StringComparison.OrdinalIgnoreCase) == 0 ||
-                                string.Compare(str, "-silent", StringComparison.OrdinalIgnoreCase) == 0)
-                            {
-                                LogUtil.Silent = true;
-                            }
+                                if (str.StartsWith("/key:", StringComparison.OrdinalIgnoreCase) ||
+                                    str.StartsWith("-key:", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    predefinedEncryptionKey = str.Remove(0, 5);
+                                }
+                                if (str.StartsWith("/path:", StringComparison.OrdinalIgnoreCase) ||
+                                       str.StartsWith("-path:", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    predefinedPath = str.Remove(0, 6);
+                                }
+                                if (str.StartsWith("/iv:", StringComparison.OrdinalIgnoreCase) ||
+                            str.StartsWith("-iv:", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    predefinedInitializationVector = str.Remove(0, 4);
+                                }
+                                if (string.Compare(str, "/s", StringComparison.OrdinalIgnoreCase) == 0 ||
+                                    string.Compare(str, "/silent", StringComparison.OrdinalIgnoreCase) == 0 ||
+                                    string.Compare(str, "-s", StringComparison.OrdinalIgnoreCase) == 0 ||
+                                    string.Compare(str, "-silent", StringComparison.OrdinalIgnoreCase) == 0)
+                                {
+                                    LogUtil.Silent = true;
+                                }
                             }
 
-                        if (string.IsNullOrWhiteSpace(predefinedEncryptionKey) ||
-                            string.IsNullOrWhiteSpace(predefinedInitializationVector))
-                        {
-                            LogUtil.WriteLine("Encryption key and IV not found, use additional parameters /key: /iv:");
+                            if (string.IsNullOrWhiteSpace(predefinedEncryptionKey) ||
+                                string.IsNullOrWhiteSpace(predefinedInitializationVector))
+                            {
+                                LogUtil.WriteLine("Encryption key and IV not found, use additional parameters /key: /iv:");
+                            }
                         }
-                    }
 
-                    if (args.Length > 5)
-                    {
-                        LogUtil.WriteLine("Too many arguments!");
-                        return;
+                        if (args.Length > 5)
+                        {
+                            LogUtil.WriteLine("Too many arguments!");
+                            return;
+                        }
+                        break;
                     }
-                    break;
-                }
             }
 
             var intunewinPath = args[0];
@@ -72,14 +79,25 @@ namespace IntuneWinAppUtilDecoder
             {
                 var webClient = new WebClient();
                 var url = intunewinPath;
-                var tempPath = Path.Combine(Path.GetTempPath(), Path.GetTempFileName());
+                var tempPath = string.Empty;
+                if (predefinedPath != string.Empty)
+                {
+                    var x = Guid.NewGuid() + ".tmp";
+                    tempPath = Path.Combine(predefinedPath, x);
+                }
+
+                else
+                {
+                    tempPath = Path.Combine(Path.GetTempPath(), Path.GetTempFileName());
+                }
+
                 LogUtil.WriteLine($"http location specified, downloading .intunewin here: {tempPath}");
                 LogUtil.Write($"downloading ...");
                 webClient.DownloadFile(url, tempPath);
                 LogUtil.WriteLine($" done!");
                 intunewinPath = tempPath;
             }
-            
+
             if (File.Exists(intunewinPath))
             {
                 basePath = Path.GetDirectoryName(intunewinPath);
@@ -236,7 +254,7 @@ namespace IntuneWinAppUtilDecoder
                     _ = fileStreamSource.Seek(48L, SeekOrigin.Begin);
 
                     cryptoStream = new CryptoStream(fileStreamTarget, transform, CryptoStreamMode.Write);
-                    
+
                     int count, tracker = 0;
                     while ((count = fileStreamSource.Read(buffer, 0, 2097152)) > 0)
                     {
@@ -288,13 +306,14 @@ namespace IntuneWinAppUtilDecoder
             LogUtil.WriteLine("This utility will decode an encrypted .intunewin package which was built with the");
             LogUtil.WriteLine("'Microsoft Intune Win32 App Packaging Tool' (https://github.com/Microsoft/Microsoft-Win32-Content-Prep-Tool)");
             LogUtil.WriteLine();
-            LogUtil.WriteLine("USAGE: IntuneWinAppUtilDecoder.exe <FullPathToIntunewinFile> [/s | /silent] [/key:base64encodedKey /iv:base64encodedIV]");
+            LogUtil.WriteLine("USAGE: IntuneWinAppUtilDecoder.exe <FullPathToIntunewinFile> [/s | /silent] [/key:base64encodedKey /iv:base64encodedIV] [/path:pathToDirectoryForFile]");
             LogUtil.WriteLine();
             LogUtil.WriteLine("Examples");
             LogUtil.WriteLine("Interactive: IntuneWinAppUtilDecoder.exe \"C:\\Temp\\MyWin32Package.intunewin\"");
             LogUtil.WriteLine("Silent:      IntuneWinAppUtilDecoder.exe \"C:\\Temp\\MyWin32Package.intunewin\" /s");
             LogUtil.WriteLine("With Keys:   IntuneWinAppUtilDecoder.exe \"C:\\Temp\\EncryptedMyWin32Package.intunewin\" /key:AbC= /iv:XyZ==");
-            LogUtil.WriteLine("");
+            LogUtil.WriteLine("With Keys and path:   IntuneWinAppUtilDecoder.exe \"C:\\Temp\\EncryptedMyWin32Package.intunewin\" /key:AbC= /iv:XyZ== /path:c:\\myfiles\\");
+            LogUtil.WriteLine("If you want the decoded file to be put in another directory please provide a path to the directory in /path:");
             LogUtil.WriteLine("When using Key and IV parameter information you must provide a path to the encrypted .intunewin file.");
             LogUtil.WriteLine("This mode can also be combined with /silent parameter. URLs are also supported instead of file path for intunewin.");
 #if DEBUG
