@@ -13,6 +13,7 @@ namespace IntuneWinAppUtilDecoder
         {
             var predefinedEncryptionKey = string.Empty;
             var predefinedInitializationVector = string.Empty;
+            var filePath = string.Empty;
 
             // get command line parameters
             switch (args.Length)
@@ -43,7 +44,17 @@ namespace IntuneWinAppUtilDecoder
                             {
                                 LogUtil.Silent = true;
                             }
+                            if (str.StartsWith("/filePath:", StringComparison.OrdinalIgnoreCase) ||
+                                str.StartsWith("-filePath:", StringComparison.OrdinalIgnoreCase))
+                            {
+                                filePath = str.Remove(0, 10);
+                                if (!Directory.Exists(Path.GetDirectoryName(filePath)))
+                                {
+                                    LogUtil.WriteLine("Target directory not existing!");
+                                    return;
+                                }
                             }
+                        }
 
                         if (string.IsNullOrWhiteSpace(predefinedEncryptionKey) ||
                             string.IsNullOrWhiteSpace(predefinedInitializationVector))
@@ -72,12 +83,15 @@ namespace IntuneWinAppUtilDecoder
             {
                 var webClient = new WebClient();
                 var url = intunewinPath;
-                var tempPath = Path.Combine(Path.GetTempPath(), Path.GetTempFileName());
-                LogUtil.WriteLine($"http location specified, downloading .intunewin here: {tempPath}");
+                if (string.IsNullOrEmpty(filePath))
+                {
+                    filePath = Path.Combine(Path.GetTempPath(), Path.GetTempFileName());
+                }
+                LogUtil.WriteLine($"http location specified, downloading .intunewin here: {filePath}");
                 LogUtil.Write($"downloading ...");
-                webClient.DownloadFile(url, tempPath);
+                webClient.DownloadFile(url, filePath);
                 LogUtil.WriteLine($" done!");
-                intunewinPath = tempPath;
+                intunewinPath = filePath;
             }
             
             if (File.Exists(intunewinPath))
@@ -85,7 +99,8 @@ namespace IntuneWinAppUtilDecoder
                 basePath = Path.GetDirectoryName(intunewinPath);
                 if (basePath == null) return;
 
-                targetFile = $"{intunewinPath}.decoded";
+                // appending .decoded.zip prevents overwrite issues as we work in the same directory and on the same file
+                targetFile = $"{intunewinPath.Replace(Path.GetExtension(intunewinPath), ".decoded.zip")}";
                 extractPath = $"{basePath}\\extracted";
 
                 if (File.Exists(targetFile))
@@ -288,12 +303,13 @@ namespace IntuneWinAppUtilDecoder
             LogUtil.WriteLine("This utility will decode an encrypted .intunewin package which was built with the");
             LogUtil.WriteLine("'Microsoft Intune Win32 App Packaging Tool' (https://github.com/Microsoft/Microsoft-Win32-Content-Prep-Tool)");
             LogUtil.WriteLine();
-            LogUtil.WriteLine("USAGE: IntuneWinAppUtilDecoder.exe <FullPathToIntunewinFile> [/s | /silent] [/key:base64encodedKey /iv:base64encodedIV]");
+            LogUtil.WriteLine("USAGE: IntuneWinAppUtilDecoder.exe <FullPathToIntunewinFile> [/s | /silent] [/key:base64encodedKey /iv:base64encodedIV] [/filePath:C:\\temp\\DecryptedMyWin32Package.zip]");
             LogUtil.WriteLine();
             LogUtil.WriteLine("Examples");
-            LogUtil.WriteLine("Interactive: IntuneWinAppUtilDecoder.exe \"C:\\Temp\\MyWin32Package.intunewin\"");
-            LogUtil.WriteLine("Silent:      IntuneWinAppUtilDecoder.exe \"C:\\Temp\\MyWin32Package.intunewin\" /s");
-            LogUtil.WriteLine("With Keys:   IntuneWinAppUtilDecoder.exe \"C:\\Temp\\EncryptedMyWin32Package.intunewin\" /key:AbC= /iv:XyZ==");
+            LogUtil.WriteLine("Interactive:        IntuneWinAppUtilDecoder.exe \"C:\\Temp\\MyWin32Package.intunewin\"");
+            LogUtil.WriteLine("Silent:             IntuneWinAppUtilDecoder.exe \"C:\\Temp\\MyWin32Package.intunewin\" /s");
+            LogUtil.WriteLine("With Keys:          IntuneWinAppUtilDecoder.exe \"C:\\Temp\\EncryptedWin32Package.intunewin\" /key:AbC= /iv:XyZ==");
+            LogUtil.WriteLine("With Keys and Path: IntuneWinAppUtilDecoder.exe \"C:\\Temp\\EncryptedWin32Package.intunewin\" /key:AbC= /iv:XyZ== /filePath:\"C:\\temp\\DecryptedWin32Package.zip\"");
             LogUtil.WriteLine("");
             LogUtil.WriteLine("When using Key and IV parameter information you must provide a path to the encrypted .intunewin file.");
             LogUtil.WriteLine("This mode can also be combined with /silent parameter. URLs are also supported instead of file path for intunewin.");
