@@ -3,7 +3,7 @@
 <#
 Version: 2.0
 Author:  Oliver Kieselbach
-Script:  Get-DecryptInfoFromSideCarLogFiles.ps1
+Script:  GetDecryptInfoFromSideCarLogFiles.ps1
 Date:    3/29/2022
 
 Description:
@@ -12,7 +12,9 @@ the log message containing decryption info for Intune Win32 apps (.intunewin)
 
 Release notes:
 Version 1.0: Original published version.
+             initial blog here: https://oliverkieselbach.com/2019/01/03/how-to-decode-intune-win32-app-packages/
 Version 2.0: Added ability to turn on 'Verbose' logging for IME and changed the search string to identify the necessary log entry.
+             read more about the new version here: https://oliverkieselbach.com/2022/03/30/ime-debugging-and-intune-win32-app-decoding-part-2/
 
 The script is provided "AS IS" with no warranties.
 #>
