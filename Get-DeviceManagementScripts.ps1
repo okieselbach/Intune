@@ -54,7 +54,7 @@ Get-DeviceManagementScripts -FolderPath C:\temp -FileName myScript.ps1
     $result = Invoke-MSGraphRequest -Url "$graphUrl/deviceManagement/deviceManagementScripts" -HttpMethod GET
 
     if ($FileName){
-        $scriptIds = $result.value | Select-Object id,fileName | Where-Object -Property fileName -eq $FileName
+        $scriptId = $result.value | Select-Object id,fileName | Where-Object -Property fileName -eq $FileName
         $script = Invoke-MSGraphRequest -Url "$graphUrl/deviceManagement/deviceManagementScripts/$($scriptId.id)" -HttpMethod GET
         [System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($($script.scriptContent))) | Out-File -Encoding ASCII -FilePath $(Join-Path $FolderPath $($script.fileName))
     }
