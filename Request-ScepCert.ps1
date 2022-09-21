@@ -1,5 +1,5 @@
 <#
-Version: 0.1
+Version: 0.2
 Author: Christoph Hannebauer (glueckkanja-gab)
 Script: Request-ScepCert.ps1
 
@@ -8,7 +8,7 @@ Uses Windows-built-in dmcertinst.exe to create and submit a SCEP request.
 The certificate is installed in the current user's MY store.
 
 Release notes:
-Version 0.1: Original published version as PoC.
+Version 0.2: Original published version as PoC.
 
 The script is provided under the terms of the Unlicense (https://unlicense.org/).
 #>
@@ -24,6 +24,10 @@ param(
 Set-Location "HKCU:\SOFTWARE\Microsoft\SCEP\MS DM Server"
 mkdir static
 Set-Location static
+
+Set-ItemProperty -Path . -Name CertThumbprint -Value ""
+Set-ItemProperty -Path . -Name Status -Value 0x20   # No cert is there yet
+
 mkdir Install
 Set-Location .\Install
 
