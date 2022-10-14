@@ -1,14 +1,15 @@
 <#
-Version: 1.0
+Version: 1.1
 Author:  Oliver Kieselbach
-Script:  PrimaryUser.ps1
-Date:    6/23/2022
+Script:  Detect-PrimaryUser.ps1
+Date:    10/13/2022
 
 Description:
 Check if logged on user is enrollment user which is also our primary user (primary user change is not supported)
 
 Release notes:
 Version 1.0: Original published version.
+Version 1.1: renamed to Detect-PrimaryUser.ps1
 
 The script is provided "AS IS" with no warranties.
 #>
