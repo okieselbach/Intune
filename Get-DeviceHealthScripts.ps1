@@ -49,10 +49,10 @@ Get-DeviceHealthScripts -FolderPath C:\temp\HealthScripts
         $healthScriptPath = Join-Path $FolderPath ($script.displayName)
         New-Item -Path $healthScriptPath -ItemType Directory
         if (($script.detectionScriptContent).Length -ne 0) {
-            [System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($($script.detectionScriptContent))) | Out-File -Encoding ASCII -FilePath $(Join-Path $healthScriptPath "DetectionScript.ps1")
+            [System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($($script.detectionScriptContent))) | Out-File -NoNewLine -Encoding ASCII -FilePath $(Join-Path $healthScriptPath "DetectionScript.ps1")
         }
         if (($script.remediationScriptContent).Length -ne 0) {
-            [System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($($script.remediationScriptContent))) | Out-File -Encoding ASCII -FilePath $(Join-Path $healthScriptPath "RemediationScript.ps1")
+            [System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($($script.remediationScriptContent))) | Out-File -NoNewLine -Encoding ASCII -FilePath $(Join-Path $healthScriptPath "RemediationScript.ps1")
         }
     }
 }
