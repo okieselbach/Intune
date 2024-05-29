@@ -25,7 +25,9 @@ The SID to convert
 }
 
 
-$sid = "S-1-12-1-1943430372-1249052806-2496021943-3034400218"
+#$sid = "S-1-12-1-1484481183-1312765185-2161529533-2885338732" # Global Administrator role
+#$sid = "S-1-12-1-1714650063-1279023240-2373304728-3448477032" # ADM_Workstations group
+$sid = "S-1-12-1-3634333542-1146815947-1446741395-3659670604" # Azure AD Joined Device Local Administrator role
 $objectId = Convert-AzureAdSidToObjectId -Sid $sid
 Write-Output $objectId
 

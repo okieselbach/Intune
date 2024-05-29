@@ -23,7 +23,7 @@ The Object ID to convert
     return $sid
 }
 
-$objectId = "73d664e4-0886-4a73-b745-c694da45ddb4"
+$objectId = "796b2736-f81a-4bc3-8dd8-9cdd8b8f2dcb" # TestLocalAdminGroup
 $sid = Convert-AzureAdObjectIdToSid -ObjectId $objectId
 Write-Output $sid
 
