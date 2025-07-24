@@ -82,13 +82,14 @@ function ExtractIntuneAppDetailsFromLogFile()
                     $contentInfo = ($responsePayload.ContentInfo | ConvertFrom-Json)
                     $decryptInfo = Decrypt(([xml]$responsePayload.DecryptInfo).EncryptedMessage.EncryptedContent) | ConvertFrom-Json
 
+                    "IntuneAppID: $($responsePayload.ApplicationId)"
                     "URL: $($contentInfo.UploadLocation)"
                     "Key: $($decryptInfo.EncryptionKey)"
                     "IV:  $($decryptInfo.IV)"
 
                     if ($RunDownloadAndExtract) {
                         $targetPath = Join-Path $TargetDirectory "$($responsePayload.ApplicationId).intunewin"
-                        .\IntuneWinAppUtilDecoder.exe `"$($contentInfo.UploadLocation)`" /key:$($decryptInfo.EncryptionKey) /iv:$($decryptInfo.IV) /filePath:`"$targetPath`"
+                        &(Join-Path -Path $PSScriptRoot -ChildPath 'IntuneWinAppUtilDecoder.exe') `"$($contentInfo.UploadLocation)`" /key:$($decryptInfo.EncryptionKey) /iv:$($decryptInfo.IV) /filePath:`"$targetPath`"
                     }
 
                     $nextLine = $false
